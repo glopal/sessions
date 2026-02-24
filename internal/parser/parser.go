@@ -32,27 +32,27 @@ func ParseSession(content string) (*session.Session, error) {
 	return &s, nil
 }
 
-// ParseDeepDocFile parses a deep doc markdown file with YAML frontmatter.
-func ParseDeepDocFile(path string) (*session.DeepDoc, error) {
+// ParseArtifactFile parses an artifact markdown file with YAML frontmatter.
+func ParseArtifactFile(path string) (*session.Artifact, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("reading deep doc file: %w", err)
+		return nil, fmt.Errorf("reading artifact file: %w", err)
 	}
-	return ParseDeepDoc(string(data))
+	return ParseArtifact(string(data))
 }
 
-// ParseDeepDoc parses a deep doc from raw content string.
-func ParseDeepDoc(content string) (*session.DeepDoc, error) {
+// ParseArtifact parses an artifact from raw content string.
+func ParseArtifact(content string) (*session.Artifact, error) {
 	fm, body, err := splitFrontmatter(content)
 	if err != nil {
 		return nil, err
 	}
-	var d session.DeepDoc
-	if err := yaml.Unmarshal([]byte(fm), &d); err != nil {
-		return nil, fmt.Errorf("parsing deep doc frontmatter: %w", err)
+	var a session.Artifact
+	if err := yaml.Unmarshal([]byte(fm), &a); err != nil {
+		return nil, fmt.Errorf("parsing artifact frontmatter: %w", err)
 	}
-	d.Body = body
-	return &d, nil
+	a.Body = body
+	return &a, nil
 }
 
 // splitFrontmatter splits content into YAML frontmatter and markdown body.
@@ -105,5 +105,24 @@ func WriteSessionFile(path string, s *session.Session) error {
 		return err
 	}
 	content := fmt.Sprintf("---\n%s---\n\n%s\n", fm, s.Body)
+	return os.WriteFile(path, []byte(content), 0644)
+}
+
+// SerializeArtifactFrontmatter serializes artifact frontmatter to YAML.
+func SerializeArtifactFrontmatter(a *session.Artifact) (string, error) {
+	data, err := yaml.Marshal(a)
+	if err != nil {
+		return "", fmt.Errorf("marshaling artifact frontmatter: %w", err)
+	}
+	return string(data), nil
+}
+
+// WriteArtifactFile writes an artifact to a file with frontmatter and body.
+func WriteArtifactFile(path string, a *session.Artifact) error {
+	fm, err := SerializeArtifactFrontmatter(a)
+	if err != nil {
+		return err
+	}
+	content := fmt.Sprintf("---\n%s---\n\n%s\n", fm, a.Body)
 	return os.WriteFile(path, []byte(content), 0644)
 }

@@ -48,47 +48,10 @@ func loadAllSessions(sessionsDir string) ([]*session.Session, error) {
 	return sessions, nil
 }
 
-// loadDeepDoc loads and parses a deep doc from a session subdirectory.
-func loadDeepDoc(sessionsDir, sessionID, docPath string) (*session.DeepDoc, error) {
-	fullPath := filepath.Join(sessionsDir, sessionID, docPath)
-	return parser.ParseDeepDocFile(fullPath)
-}
-
-// extractSummaryLine extracts the first sentence/paragraph from the body after "## Summary".
-func extractSummaryLine(body string) string {
-	lines := strings.Split(body, "\n")
-	inSummary := false
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed == "## Summary" {
-			inSummary = true
-			continue
-		}
-		if inSummary {
-			if trimmed == "" {
-				continue
-			}
-			if strings.HasPrefix(trimmed, "## ") {
-				break
-			}
-			// Return first non-empty line after ## Summary
-			if len(trimmed) > 80 {
-				return trimmed[:77] + "..."
-			}
-			return trimmed
-		}
-	}
-	// Fallback: return first non-empty, non-heading line
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" && !strings.HasPrefix(trimmed, "#") && !strings.HasPrefix(trimmed, "---") {
-			if len(trimmed) > 80 {
-				return trimmed[:77] + "..."
-			}
-			return trimmed
-		}
-	}
-	return "(no summary)"
+// loadArtifact loads and parses an artifact from a session subdirectory.
+func loadArtifact(sessionsDir, sessionID, artifactPath string) (*session.Artifact, error) {
+	fullPath := filepath.Join(sessionsDir, sessionID, artifactPath)
+	return parser.ParseArtifactFile(fullPath)
 }
 
 // titleCase capitalizes the first letter of each word.

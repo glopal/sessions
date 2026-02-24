@@ -13,25 +13,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var docCmd = &cobra.Command{
-	Use:   "doc [name]",
-	Short: "Create a deep doc attached to a session",
+var artifactCmd = &cobra.Command{
+	Use:   "artifact [name]",
+	Short: "Create an artifact attached to a session",
 	Args:  cobra.ExactArgs(1),
-	RunE:  runDoc,
+	RunE:  runArtifact,
 }
 
 var (
-	docSession string
-	docType    string
+	artifactSession string
+	artifactType    string
 )
 
 func init() {
-	docCmd.Flags().StringVar(&docSession, "session", "", "Session ID to attach to (default: most recent)")
-	docCmd.Flags().StringVar(&docType, "type", "analysis", "Doc type: decision, analysis, investigation, architecture, debug-log")
-	rootCmd.AddCommand(docCmd)
+	artifactCmd.Flags().StringVar(&artifactSession, "session", "", "Session ID to attach to (default: most recent)")
+	artifactCmd.Flags().StringVar(&artifactType, "type", "analysis", "Artifact type: decision, analysis, investigation, architecture, debug-log")
+	rootCmd.AddCommand(artifactCmd)
 }
 
-func runDoc(cmd *cobra.Command, args []string) error {
+func runArtifact(cmd *cobra.Command, args []string) error {
 	sessionsDir, err := root.SessionsDir()
 	if err != nil {
 		return err
@@ -41,13 +41,13 @@ func runDoc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	docName := args[0]
-	if !strings.HasSuffix(docName, ".md") {
-		docName += ".md"
+	artifactName := args[0]
+	if !strings.HasSuffix(artifactName, ".md") {
+		artifactName += ".md"
 	}
 
 	// Determine session ID
-	sessionID := docSession
+	sessionID := artifactSession
 	if sessionID == "" {
 		sessionID, err = findMostRecentSession(sessionsDir)
 		if err != nil {
@@ -67,31 +67,32 @@ func runDoc(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("creating session subdirectory: %w", err)
 	}
 
-	// Scaffold deep doc
-	docPath := filepath.Join(subDir, docName)
-	title := strings.TrimSuffix(filepath.Base(docName), ".md")
+	// Scaffold artifact
+	artifactPath := filepath.Join(subDir, artifactName)
+	title := strings.TrimSuffix(filepath.Base(artifactName), ".md")
 	title = strings.ReplaceAll(title, "-", " ")
 	title = titleCase(title)
 
-	docContent := fmt.Sprintf(`---
+	artifactContent := fmt.Sprintf(`---
 title: %s
 type: %s
+summary: ""
 status: draft
 supersedes: null
 ---
 
-`, title, docType)
+`, title, artifactType)
 
-	if err := os.WriteFile(docPath, []byte(docContent), 0644); err != nil {
-		return fmt.Errorf("writing deep doc: %w", err)
+	if err := os.WriteFile(artifactPath, []byte(artifactContent), 0644); err != nil {
+		return fmt.Errorf("writing artifact: %w", err)
 	}
 
-	// Update parent session's docs list
-	if err := addDocToSession(sessionFile, docName, docType); err != nil {
+	// Update parent session's artifacts list
+	if err := addArtifactToSession(sessionFile, artifactName, artifactType); err != nil {
 		return fmt.Errorf("updating session file: %w", err)
 	}
 
-	fmt.Println(docPath)
+	fmt.Println(artifactPath)
 	return nil
 }
 
@@ -117,15 +118,15 @@ func findMostRecentSession(sessionsDir string) (string, error) {
 	return sessionIDs[len(sessionIDs)-1], nil
 }
 
-func addDocToSession(sessionFile, docName, docType string) error {
+func addArtifactToSession(sessionFile, artifactName, artifactType string) error {
 	s, err := parser.ParseSessionFile(sessionFile)
 	if err != nil {
 		return err
 	}
 
-	s.Docs = append(s.Docs, session.DocRef{
-		Path:    docName,
-		Type:    docType,
+	s.Artifacts = append(s.Artifacts, session.ArtifactRef{
+		Path:    artifactName,
+		Type:    artifactType,
 		Summary: "",
 	})
 

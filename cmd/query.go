@@ -20,20 +20,20 @@ var queryCmd = &cobra.Command{
 }
 
 var (
-	queryFile    string
-	queryTag     string
-	queryDocType string
-	queryAfter   string
-	queryBefore  string
-	querySearch  string
-	queryLimit   int
-	queryFormat  string
+	queryFile         string
+	queryTag          string
+	queryArtifactType string
+	queryAfter        string
+	queryBefore       string
+	querySearch       string
+	queryLimit        int
+	queryFormat       string
 )
 
 func init() {
 	queryCmd.Flags().StringVar(&queryFile, "file", "", "Filter by file path (exact or glob)")
 	queryCmd.Flags().StringVar(&queryTag, "tag", "", "Filter by tag")
-	queryCmd.Flags().StringVar(&queryDocType, "doc-type", "", "Filter by doc type")
+	queryCmd.Flags().StringVar(&queryArtifactType, "artifact-type", "", "Filter by artifact type")
 	queryCmd.Flags().StringVar(&queryAfter, "after", "", "Filter sessions after date (YYYY-MM-DD)")
 	queryCmd.Flags().StringVar(&queryBefore, "before", "", "Filter sessions before date (YYYY-MM-DD)")
 	queryCmd.Flags().StringVar(&querySearch, "search", "", "Full-text search across session bodies")
@@ -81,10 +81,10 @@ func runQuery(cmd *cobra.Command, args []string) error {
 }
 
 type queryResult struct {
-	Session      *session.Session
-	MatchedFiles []string
-	MatchedTags  []string
-	MatchedDocs  []string
+	Session          *session.Session
+	MatchedFiles     []string
+	MatchedTags      []string
+	MatchedArtifacts []string
 }
 
 func matchSession(s *session.Session) *queryResult {
@@ -130,12 +130,12 @@ func matchSession(s *session.Session) *queryResult {
 		}
 	}
 
-	// Doc type filter
-	if queryDocType != "" {
+	// Artifact type filter
+	if queryArtifactType != "" {
 		found := false
-		for _, d := range s.Docs {
-			if d.Type == queryDocType {
-				r.MatchedDocs = append(r.MatchedDocs, d.Path)
+		for _, a := range s.Artifacts {
+			if a.Type == queryArtifactType {
+				r.MatchedArtifacts = append(r.MatchedArtifacts, a.Path)
 				found = true
 			}
 		}
@@ -195,7 +195,10 @@ func parseDateStr(dateStr string) (time.Time, error) {
 
 func outputQueryText(results []*queryResult) error {
 	for _, r := range results {
-		summary := extractSummaryLine(r.Session.Body)
+		summary := r.Session.Summary
+		if summary == "" {
+			summary = "(no summary)"
+		}
 		line := fmt.Sprintf("%s  %s", r.Session.SessionID, summary)
 
 		var extras []string
@@ -205,8 +208,8 @@ func outputQueryText(results []*queryResult) error {
 		if len(r.MatchedTags) > 0 {
 			extras = append(extras, "tags: "+strings.Join(r.MatchedTags, ", "))
 		}
-		if len(r.MatchedDocs) > 0 {
-			extras = append(extras, "docs: "+strings.Join(r.MatchedDocs, ", "))
+		if len(r.MatchedArtifacts) > 0 {
+			extras = append(extras, "artifacts: "+strings.Join(r.MatchedArtifacts, ", "))
 		}
 		if len(extras) > 0 {
 			line += "  [" + strings.Join(extras, "; ") + "]"
@@ -221,7 +224,7 @@ type queryJSONResult struct {
 	Summary   string   `json:"summary"`
 	Tags      []string `json:"tags"`
 	Files     []string `json:"matched_files,omitempty"`
-	Docs      []string `json:"matched_docs,omitempty"`
+	Artifacts []string `json:"matched_artifacts,omitempty"`
 }
 
 func outputQueryJSON(results []*queryResult) error {
@@ -229,10 +232,10 @@ func outputQueryJSON(results []*queryResult) error {
 	for _, r := range results {
 		jsonResults = append(jsonResults, queryJSONResult{
 			SessionID: r.Session.SessionID,
-			Summary:   extractSummaryLine(r.Session.Body),
+			Summary:   r.Session.Summary,
 			Tags:      r.Session.Tags,
 			Files:     r.MatchedFiles,
-			Docs:      r.MatchedDocs,
+			Artifacts: r.MatchedArtifacts,
 		})
 	}
 	enc := json.NewEncoder(os.Stdout)

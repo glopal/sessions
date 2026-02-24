@@ -24,7 +24,7 @@ var (
 )
 
 func init() {
-	contextCmd.Flags().BoolVar(&contextDeep, "deep", false, "Include deep doc bodies in output")
+	contextCmd.Flags().BoolVar(&contextDeep, "deep", false, "Include artifact bodies in output")
 	contextCmd.Flags().StringVar(&contextFormat, "format", "markdown", "Output format: markdown or json")
 	rootCmd.AddCommand(contextCmd)
 }
@@ -59,7 +59,10 @@ func outputContextMarkdown(sessionsDir string, sessions []*session.Session, file
 			for _, fc := range s.FilesChanged {
 				if fc.Path == file {
 					found = true
-					summary := extractSummaryLine(s.Body)
+					summary := s.Summary
+					if summary == "" {
+						summary = "(no summary)"
+					}
 					fmt.Printf("## %s — %s\n", s.SessionID, summary)
 					fmt.Printf("- **Action:** %s\n", fc.Action)
 					fmt.Printf("- **Change:** %s\n", fc.Summary)
@@ -67,20 +70,20 @@ func outputContextMarkdown(sessionsDir string, sessions []*session.Session, file
 						fmt.Printf("- **Tags:** %s\n", strings.Join(s.Tags, ", "))
 					}
 
-					for _, doc := range s.Docs {
+					for _, art := range s.Artifacts {
 						status := ""
-						dd, err := loadDeepDoc(sessionsDir, s.SessionID, doc.Path)
+						a, err := loadArtifact(sessionsDir, s.SessionID, art.Path)
 						if err == nil {
-							status = dd.Status
+							status = a.Status
 						}
 						statusStr := ""
 						if status != "" {
 							statusStr = fmt.Sprintf(" (%s)", status)
 						}
-						fmt.Printf("- **%s:** %s%s\n", capitalize(doc.Type), doc.Path, statusStr)
+						fmt.Printf("- **%s:** %s%s\n", capitalize(art.Type), art.Path, statusStr)
 
-						if contextDeep && dd != nil && dd.Body != "" {
-							fmt.Printf("\n### %s\n\n%s\n\n", dd.Title, dd.Body)
+						if contextDeep && a != nil && a.Body != "" {
+							fmt.Printf("\n### %s\n\n%s\n\n", a.Title, a.Body)
 						}
 					}
 					fmt.Println()
@@ -102,16 +105,16 @@ type contextJSONOutput struct {
 }
 
 type contextJSONSession struct {
-	SessionID   string           `json:"session_id"`
-	Timestamp   string           `json:"timestamp"`
-	Summary     string           `json:"summary"`
-	FileAction  string           `json:"file_action"`
-	FileSummary string           `json:"file_summary"`
-	Tags        []string         `json:"tags"`
-	Docs        []contextJSONDoc `json:"docs,omitempty"`
+	SessionID   string                 `json:"session_id"`
+	Timestamp   string                 `json:"timestamp"`
+	Summary     string                 `json:"summary"`
+	FileAction  string                 `json:"file_action"`
+	FileSummary string                 `json:"file_summary"`
+	Tags        []string               `json:"tags"`
+	Artifacts   []contextJSONArtifact  `json:"artifacts,omitempty"`
 }
 
-type contextJSONDoc struct {
+type contextJSONArtifact struct {
 	Path    string `json:"path"`
 	Type    string `json:"type"`
 	Status  string `json:"status"`
@@ -132,23 +135,23 @@ func outputContextJSON(sessionsDir string, sessions []*session.Session, files []
 					cs := contextJSONSession{
 						SessionID:   s.SessionID,
 						Timestamp:   s.Timestamp.Format("2006-01-02T15:04:05-07:00"),
-						Summary:     extractSummaryLine(s.Body),
+						Summary:     s.Summary,
 						FileAction:  fc.Action,
 						FileSummary: fc.Summary,
 						Tags:        s.Tags,
 					}
 
-					for _, doc := range s.Docs {
-						cd := contextJSONDoc{
-							Path:    doc.Path,
-							Type:    doc.Type,
-							Summary: doc.Summary,
+					for _, art := range s.Artifacts {
+						ca := contextJSONArtifact{
+							Path:    art.Path,
+							Type:    art.Type,
+							Summary: art.Summary,
 						}
-						dd, err := loadDeepDoc(sessionsDir, s.SessionID, doc.Path)
+						a, err := loadArtifact(sessionsDir, s.SessionID, art.Path)
 						if err == nil {
-							cd.Status = dd.Status
+							ca.Status = a.Status
 						}
-						cs.Docs = append(cs.Docs, cd)
+						cs.Artifacts = append(cs.Artifacts, ca)
 					}
 
 					output.Sessions = append(output.Sessions, cs)

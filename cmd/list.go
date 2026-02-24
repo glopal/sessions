@@ -61,11 +61,14 @@ func runList(cmd *cobra.Command, args []string) error {
 			}
 		}
 
-		summary := extractSummaryLine(s.Body)
+		summary := s.Summary
+		if summary == "" {
+			summary = "(no summary)"
+		}
 		line := fmt.Sprintf("%s  %s", s.SessionID, summary)
 
 		if listVerbose {
-			line += fmt.Sprintf("  [files: %d, docs: %d]", len(s.FilesChanged), len(s.Docs))
+			line += fmt.Sprintf("  [files: %d, artifacts: %d]", len(s.FilesChanged), len(s.Artifacts))
 		}
 
 		if len(s.Tags) > 0 {

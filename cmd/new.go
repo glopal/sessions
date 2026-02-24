@@ -20,9 +20,9 @@ var newCmd = &cobra.Command{
 }
 
 var (
-	newTags    string
-	gitDiff    bool
-	diffBase   string
+	newTags  string
+	gitDiff  bool
+	diffBase string
 )
 
 func init() {
@@ -70,11 +70,7 @@ func runNew(cmd *cobra.Command, args []string) error {
 		FilesChanged: files,
 	}
 
-	s.Body = `## Summary
-
-A concise 2-4 sentence summary of what happened in this session.
-
-## Key Decisions
+	s.Body = `## Key Decisions
 
 - Decision 1 and rationale.
 
