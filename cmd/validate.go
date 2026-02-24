@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/glopal/sessions/internal/parser"
@@ -60,9 +59,9 @@ func runValidate(cmd *cobra.Command, args []string) error {
 	} else {
 		// Validate only specified keys
 		for _, key := range args {
-			sessionID, artifactFile, isArtifact := session.ParseKey(key)
+			sessionID, _, isArtifact := session.ParseKey(key)
+			path := session.ResolveKeyToPath(sessionsDir, key)
 			if isArtifact {
-				path := filepath.Join(sessionsDir, sessionID, artifactFile)
 				a, err := parser.ParseArtifactFile(path)
 				if err != nil {
 					issues = append(issues, validationIssue{Key: key, Reason: "unreadable"})
@@ -70,7 +69,6 @@ func runValidate(cmd *cobra.Command, args []string) error {
 				}
 				issues = append(issues, validateArtifactSummary(key, a.Summary)...)
 			} else {
-				path := filepath.Join(sessionsDir, sessionID+".md")
 				s, err := parser.ParseSessionFile(path)
 				if err != nil {
 					issues = append(issues, validationIssue{Key: key, Reason: "unreadable"})

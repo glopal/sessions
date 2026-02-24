@@ -19,25 +19,37 @@ func ensureSessionsDir(sessionsDir string) error {
 	return nil
 }
 
-// loadAllSessions reads and parses all session files from the sessions directory.
+// loadAllSessions reads and parses all session files from .sessions/sessions/ recursively.
 func loadAllSessions(sessionsDir string) ([]*session.Session, error) {
-	entries, err := os.ReadDir(sessionsDir)
+	sessionsSubDir := filepath.Join(sessionsDir, "sessions")
+	ymDirs, err := os.ReadDir(sessionsSubDir)
 	if err != nil {
 		return nil, fmt.Errorf("reading sessions directory: %w", err)
 	}
 
 	var sessions []*session.Session
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+	for _, ym := range ymDirs {
+		if !ym.IsDir() {
 			continue
 		}
-		path := filepath.Join(sessionsDir, e.Name())
-		s, err := parser.ParseSessionFile(path)
+		ymPath := filepath.Join(sessionsSubDir, ym.Name())
+		entries, err := os.ReadDir(ymPath)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warning: skipping %s: %v\n", e.Name(), err)
+			fmt.Fprintf(os.Stderr, "warning: skipping %s: %v\n", ym.Name(), err)
 			continue
 		}
-		sessions = append(sessions, s)
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			path := filepath.Join(ymPath, e.Name())
+			s, err := parser.ParseSessionFile(path)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: skipping %s: %v\n", e.Name(), err)
+				continue
+			}
+			sessions = append(sessions, s)
+		}
 	}
 
 	// Sort by session ID descending (most recent first)
@@ -48,9 +60,9 @@ func loadAllSessions(sessionsDir string) ([]*session.Session, error) {
 	return sessions, nil
 }
 
-// loadArtifact loads and parses an artifact from a session subdirectory.
+// loadArtifact loads and parses an artifact from the artifacts subdirectory.
 func loadArtifact(sessionsDir, sessionID, artifactPath string) (*session.Artifact, error) {
-	fullPath := filepath.Join(sessionsDir, sessionID, artifactPath)
+	fullPath := filepath.Join(session.ResolveArtifactDir(sessionsDir, sessionID), artifactPath)
 	return parser.ParseArtifactFile(fullPath)
 }
 

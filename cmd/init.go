@@ -29,8 +29,12 @@ var initCmd = &cobra.Command{
 			return nil
 		}
 
-		if err := os.MkdirAll(sessionsDir, 0755); err != nil {
-			return fmt.Errorf("creating .sessions/ directory: %w", err)
+		// Create top-level and subdirectories
+		for _, sub := range []string{"", "sessions", "artifacts"} {
+			dir := filepath.Join(sessionsDir, sub)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				return fmt.Errorf("creating %s directory: %w", dir, err)
+			}
 		}
 
 		gitkeep := filepath.Join(sessionsDir, ".gitkeep")

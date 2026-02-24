@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/glopal/sessions/internal/parser"
 	"github.com/glopal/sessions/internal/root"
@@ -46,8 +45,8 @@ func runLink(cmd *cobra.Command, args []string) error {
 }
 
 func manualLink(sessionsDir, id1, id2 string) error {
-	file1 := filepath.Join(sessionsDir, id1+".md")
-	file2 := filepath.Join(sessionsDir, id2+".md")
+	file1 := session.ResolveSessionPath(sessionsDir, id1)
+	file2 := session.ResolveSessionPath(sessionsDir, id2)
 
 	s1, err := parser.ParseSessionFile(file1)
 	if err != nil {
@@ -126,7 +125,7 @@ func autoLink(sessionsDir string) error {
 			}
 		}
 		if changed {
-			file := filepath.Join(sessionsDir, id+".md")
+			file := session.ResolveSessionPath(sessionsDir, id)
 			if err := parser.WriteSessionFile(file, s); err != nil {
 				fmt.Fprintf(os.Stderr, "warning: failed to update %s: %v\n", id, err)
 				continue

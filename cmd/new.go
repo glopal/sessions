@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -43,7 +44,8 @@ func runNew(cmd *cobra.Command, args []string) error {
 	}
 
 	now := time.Now()
-	sessionID := now.Format("2006-01-02_1504")
+	sessionID := fmt.Sprintf("%d", now.Unix())
+	yearMonth := now.UTC().Format("2006-01")
 
 	var tags []string
 	if newTags != "" {
@@ -78,7 +80,12 @@ func runNew(cmd *cobra.Command, args []string) error {
 
 - Anything unresolved that future sessions should be aware of.`
 
-	filePath := filepath.Join(sessionsDir, sessionID+".md")
+	sessionSubDir := filepath.Join(sessionsDir, "sessions", yearMonth)
+	if err := os.MkdirAll(sessionSubDir, 0755); err != nil {
+		return fmt.Errorf("creating session subdirectory: %w", err)
+	}
+
+	filePath := filepath.Join(sessionSubDir, sessionID+".md")
 	if err := parser.WriteSessionFile(filePath, s); err != nil {
 		return fmt.Errorf("writing session file: %w", err)
 	}

@@ -56,19 +56,19 @@ func runArtifact(cmd *cobra.Command, args []string) error {
 	}
 
 	// Validate session file exists
-	sessionFile := filepath.Join(sessionsDir, sessionID+".md")
+	sessionFile := session.ResolveSessionPath(sessionsDir, sessionID)
 	if _, err := os.Stat(sessionFile); os.IsNotExist(err) {
 		return fmt.Errorf("session file not found: %s", sessionFile)
 	}
 
-	// Create session subdirectory
-	subDir := filepath.Join(sessionsDir, sessionID)
-	if err := os.MkdirAll(subDir, 0755); err != nil {
-		return fmt.Errorf("creating session subdirectory: %w", err)
+	// Create artifact subdirectory
+	artifactDir := session.ResolveArtifactDir(sessionsDir, sessionID)
+	if err := os.MkdirAll(artifactDir, 0755); err != nil {
+		return fmt.Errorf("creating artifact subdirectory: %w", err)
 	}
 
 	// Scaffold artifact
-	artifactPath := filepath.Join(subDir, artifactName)
+	artifactPath := filepath.Join(artifactDir, artifactName)
 	title := strings.TrimSuffix(filepath.Base(artifactName), ".md")
 	title = strings.ReplaceAll(title, "-", " ")
 	title = titleCase(title)
@@ -97,17 +97,27 @@ supersedes: null
 }
 
 func findMostRecentSession(sessionsDir string) (string, error) {
-	entries, err := os.ReadDir(sessionsDir)
+	sessionsSubDir := filepath.Join(sessionsDir, "sessions")
+	ymDirs, err := os.ReadDir(sessionsSubDir)
 	if err != nil {
 		return "", fmt.Errorf("reading sessions directory: %w", err)
 	}
 
 	var sessionIDs []string
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+	for _, ym := range ymDirs {
+		if !ym.IsDir() {
 			continue
 		}
-		sessionIDs = append(sessionIDs, strings.TrimSuffix(e.Name(), ".md"))
+		entries, err := os.ReadDir(filepath.Join(sessionsSubDir, ym.Name()))
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+				continue
+			}
+			sessionIDs = append(sessionIDs, strings.TrimSuffix(e.Name(), ".md"))
+		}
 	}
 
 	if len(sessionIDs) == 0 {
