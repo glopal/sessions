@@ -105,13 +105,13 @@ type contextJSONOutput struct {
 }
 
 type contextJSONSession struct {
-	SessionID   string                 `json:"session_id"`
-	Timestamp   string                 `json:"timestamp"`
-	Summary     string                 `json:"summary"`
-	FileAction  string                 `json:"file_action"`
-	FileSummary string                 `json:"file_summary"`
-	Tags        []string               `json:"tags"`
-	Artifacts   []contextJSONArtifact  `json:"artifacts,omitempty"`
+	SessionID   string                `json:"session_id"`
+	Timestamp   string                `json:"timestamp"`
+	Summary     string                `json:"summary"`
+	FileAction  string                `json:"file_action"`
+	FileSummary string                `json:"file_summary"`
+	Tags        []string              `json:"tags"`
+	Artifacts   []contextJSONArtifact `json:"artifacts,omitempty"`
 }
 
 type contextJSONArtifact struct {
