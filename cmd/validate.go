@@ -93,7 +93,7 @@ func runValidate(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Println()
 	fmt.Println("FIX")
-	fmt.Printf("sessions edit <KEY> --summary \"<SUMMARY_LTE_%d>\"\n", session.MaxSummaryLength)
+	fmt.Printf("sessions edit <KEY> --summary \"<SUMMARY_LTE_%d_CHARS>\"\n", session.MaxSummaryLength)
 
 	os.Exit(1)
 	return nil

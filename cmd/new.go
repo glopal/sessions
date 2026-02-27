@@ -298,6 +298,8 @@ func buildHeredocTemplate(tags []string, files []session.FileChange) string {
 	}
 
 	b.WriteString("---\n\n")
+	b.WriteString("## Overview\n\n")
+	b.WriteString("An overview of the session's purpose and scope.\n\n")
 	b.WriteString("## Key Decisions\n\n")
 	b.WriteString("- Decision 1 and rationale.\n\n")
 	b.WriteString("## Open Questions\n\n")
